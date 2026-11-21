@@ -1,14 +1,8 @@
-# Dependências do servidor MCP (MVP) de Estratégia para Instagram.
-# Python 3.10+ obrigatório. Instale com:  pip install -r requirements.txt
+# Dependencias do MVP. Python 3.10+.
+# Instale com:  pip install -r requirements.txt
 
 # Framework MCP nativo (servidor + decoradores @app.tool)
 fastmcp>=2.3.0
 
-# Cliente HTTP para a Instagram Graph API
-httpx>=0.27.0
-
-# Carregamento de variáveis de ambiente a partir do .env
+# Carregamento de variaveis de ambiente (usado apenas pelo LLM opcional)
 python-dotenv>=1.0.1
-
-# Validação/estruturação de dados com tipagem
-pydantic>=2.7.0
