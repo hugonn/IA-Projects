@@ -160,8 +160,8 @@ renovou primeiro, sem gerar volume que arrisque bloqueio (cerca de 5 requisiçõ
 Pré-requisito: [Node.js](https://nodejs.org) 18.17 ou mais recente.
 
 ```bash
-git clone <url-do-repositorio>
-cd <pasta-do-repositorio>
+git clone https://github.com/hugonn/IA-Projects.git
+cd IA-Projects/apuracao-presidencial-tse
 npm install
 ```
 
