@@ -1,4 +1,4 @@
-// Gera public/mapa-brasil.js (contornos SVG das 27 UFs) a partir da malha oficial do IBGE.
+// Gera public/js/mapa-brasil.js (contornos SVG das 27 UFs) a partir da malha oficial do IBGE.
 //
 // Uso:  node scripts/gerar-mapa.js            (baixa a malha do IBGE)
 //       node scripts/gerar-mapa.js malha.json  (usa um GeoJSON já baixado)
@@ -68,9 +68,9 @@ async function carregar() {
     ufs[uf] = { d, cx: +(cx / (3 * area)).toFixed(1), cy: +(cy / (3 * area)).toFixed(1), area: Math.abs(area / 2) };
   }
 
-  const saida = path.join(__dirname, '..', 'public', 'mapa-brasil.js');
+  const saida = path.join(__dirname, '..', 'public', 'js', 'mapa-brasil.js');
   const conteudo = `// Gerado por scripts/gerar-mapa.js a partir da malha do IBGE. Não editar à mão.
-window.MAPA_BRASIL = ${JSON.stringify({ largura: LARGURA, altura, ufs })};
+export const MAPA_BRASIL = ${JSON.stringify({ largura: LARGURA, altura, ufs })};
 `;
   fs.writeFileSync(saida, conteudo);
   console.log(`${Object.keys(ufs).length} UFs -> ${saida} (${(conteudo.length / 1024).toFixed(0)} KB, viewBox 0 0 ${LARGURA} ${altura})`);

@@ -6,7 +6,7 @@
 //
 // Rotas (montadas em /mock-tse):
 //   GET  /oficial/ele{ano}/{eleicao}/dados/{uf}/{uf}-c0001-e{eleicao}-u.json
-//   POST /reset   -> reinicia a apuração do zero
+// O reinício da simulação é feito pela rota /api/mock/reset (server/app.js).
 
 const express = require('express');
 const { ESTADOS, REGIOES } = require('./regioes');
@@ -87,8 +87,29 @@ class SimuladorApuracao {
     return 1 - Math.pow(1 - x, 1.7);
   }
 
-  // Totais numéricos de uma UF no instante atual.
+  // Os 29 arquivos de um ciclo chegam quase no mesmo instante e cada um precisa dos totais do
+  // Brasil. Memorizar por janela de 100 ms evita recalcular tudo a cada arquivo (de ~25 ms para
+  // ~1 ms por ciclo), o que mantém o event loop livre sem precisar de worker threads.
+  memo(chave, calcular) {
+    const janela = `${this.inicio}:${Math.floor(Date.now() / 100)}`;
+    if (this.memoJanela !== janela) {
+      this.memoJanela = janela;
+      this.memoCache = new Map();
+    }
+    if (!this.memoCache.has(chave)) this.memoCache.set(chave, calcular());
+    return this.memoCache.get(chave);
+  }
+
   totaisUf(uf) {
+    return this.memo(uf, () => this.calcularUf(uf));
+  }
+
+  totaisBr() {
+    return this.memo('br', () => this.calcularBr());
+  }
+
+  // Totais numéricos de uma UF no instante atual.
+  calcularUf(uf) {
     const p = this.progresso(uf);
     const eleitorado = ELEITORADO_MIL[uf] * 1000 + Math.round(hash(uf) * 999);
     const secoes = Math.round(eleitorado / 318);
@@ -117,7 +138,7 @@ class SimuladorApuracao {
     return { ts: secoes, st, te: eleitorado, est, c, a: est - c, vb, tvn, vv, votos };
   }
 
-  totaisBr() {
+  calcularBr() {
     const ufs = [...Object.keys(ESTADOS), 'zz'];
     const acc = { ts: 0, st: 0, te: 0, est: 0, c: 0, a: 0, vb: 0, tvn: 0, vv: 0, votos: this.candidatos.map(() => 0) };
     for (const uf of ufs) {
@@ -184,8 +205,7 @@ class SimuladorApuracao {
   }
 }
 
-function criarRotasMock(cfg) {
-  const sim = new SimuladorApuracao({ turno: cfg.turno, duracaoMin: cfg.mockDuracaoMin, eleicao: cfg.eleicao });
+function criarRotasMock(cfg, sim) {
   const router = express.Router();
   const padrao = /^([a-z]{2})-c0001-e(\d{6})-u\.json$/;
 
@@ -198,18 +218,17 @@ function criarRotasMock(cfg) {
     // Simula instabilidade típica de dia de eleição.
     const sorteio = Math.random();
     if (sorteio < cfg.mockFalhas) return res.status(503).send('Service Unavailable');
-    if (sorteio < cfg.mockFalhas * 1.1) return setTimeout(() => res.json(sim.arquivo(uf)), cfg.timeoutMs + 1500);
+    if (sorteio < cfg.mockFalhas * 1.1) {
+      // Resposta lenta (passa do timeout do poller); o timer é limpo se o cliente desistir.
+      const timer = setTimeout(() => res.json(sim.arquivo(uf)), cfg.timeoutMs + 1500);
+      return req.on('close', () => clearTimeout(timer));
+    }
 
     res.set('Cache-Control', 'no-store').json(sim.arquivo(uf));
   });
 
   // Sem fotos no mock: o frontend mostra o placeholder com as iniciais.
   router.get('/:ambiente/:ciclo/:ele/fotos/*', (req, res) => res.status(404).end());
-
-  router.post('/reset', (req, res) => {
-    sim.reset();
-    res.json({ ok: true });
-  });
 
   return { router, sim };
 }

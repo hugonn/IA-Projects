@@ -8,8 +8,10 @@
 // É uma estimativa aritmética simples, não uma projeção estatística oficial: assume que, dentro
 // de cada UF, as seções que faltam se parecem com as já apuradas.
 
+const { randomUUID } = require('node:crypto');
 const { UFS, ESTADOS } = require('./regioes');
-const { urlArquivo, parseArquivo } = require('./tse');
+const { urlArquivo, parseArquivo, descartarCorpo } = require('./tse');
+const log = require('./logger');
 
 const TODAS = [...UFS, 'zz'];
 
@@ -26,16 +28,25 @@ class Referencia {
     return this.dados.size === TODAS.length;
   }
 
-  async carregar() {
+  async carregar(requestId = randomUUID()) {
     if (this.completa || this.carregando) return this.carregando;
     const faltando = TODAS.filter((uf) => !this.dados.has(uf));
     this.carregando = Promise.allSettled(faltando.map(async (uf) => {
-      const r = await fetch(urlArquivo(this.cfg, uf), { signal: AbortSignal.timeout(this.cfg.timeoutMs) });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const r = await fetch(urlArquivo(this.cfg, uf), {
+        headers: { Accept: 'application/json', 'X-Request-Id': requestId },
+        signal: AbortSignal.timeout(this.cfg.timeoutMs),
+      });
+      if (!r.ok) {
+        await descartarCorpo(r);
+        throw new Error(`HTTP ${r.status}`);
+      }
       this.dados.set(uf, parseArquivo(await r.json()));
-    })).finally(() => {
+    })).then((resultados) => {
+      const falhas = resultados.filter((x) => x.status === 'rejected').length;
+      if (this.completa) log.info('referência da projeção carregada', { requestId, eleicao: this.eleicao });
+      else log.warn('referência da projeção incompleta', { requestId, eleicao: this.eleicao, falhas });
+    }).finally(() => {
       this.carregando = null;
-      if (this.completa) console.log(`Referência para projeção carregada (1º turno, eleição ${this.eleicao}).`);
     });
     return this.carregando;
   }

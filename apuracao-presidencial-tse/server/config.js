@@ -44,4 +44,9 @@ module.exports = {
   timeoutMs: Number(opt('timeout', 'TIMEOUT_MS', '5000')),
   mockDuracaoMin: Number(opt('duracao', 'MOCK_DURACAO_MIN', '8')),
   mockFalhas: Number(opt('falhas', 'MOCK_FALHAS', '0.04')),
+  // Comentário "ping" enviado às conexões SSE para proxies e navegadores não as derrubarem.
+  sseHeartbeatMs: Number(opt('heartbeat', 'SSE_HEARTBEAT_MS', '20000')),
+  // Tempo máximo para fechar conexões no encerramento antes de forçar a saída.
+  shutdownTimeoutMs: Number(opt('shutdown-timeout', 'SHUTDOWN_TIMEOUT_MS', '5000')),
+  limiteCorpo: opt('limite-corpo', 'LIMITE_CORPO', '100kb'),
 };

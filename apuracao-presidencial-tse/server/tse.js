@@ -7,7 +7,9 @@
 // Fotos dos candidatos:
 //   {base}/{ambiente}/ele{ano}/{eleicao}/fotos/br/{sqcand}.jpeg
 
+const { randomUUID } = require('node:crypto');
 const { UFS } = require('./regioes');
+const log = require('./logger');
 
 const ARQUIVOS = ['br', ...UFS, 'zz'];
 
@@ -18,6 +20,16 @@ function urlArquivo(cfg, abrangencia) {
 
 function urlFoto(cfg, sqcand) {
   return `${cfg.tseBaseUrl}/${cfg.ambiente}/ele${cfg.ano}/${cfg.eleicao}/fotos/br/${sqcand}.jpeg`;
+}
+
+// Respostas descartadas (erro, 304) precisam ter o corpo cancelado para liberar a conexão
+// do pool interno do fetch (undici).
+async function descartarCorpo(resp) {
+  try {
+    await resp.body?.cancel();
+  } catch {
+    // corpo já consumido ou conexão encerrada: nada a liberar
+  }
 }
 
 // O TSE publica números como string, com vírgula decimal ("47,027772356").
@@ -120,12 +132,14 @@ class TsePoller {
   // Executa um ciclo ('auto' pelo timer ou 'manual' pelo botão). Se já houver um ciclo
   // em andamento, devolve o mesmo em vez de disparar requisições em dobro.
   // Depois de qualquer ciclo, a próxima atualização automática volta a contar do zero.
-  executar(origem) {
+  // `requestId` liga o ciclo à requisição HTTP que o pediu (atualização manual) nos logs
+  // e é repassado ao TSE no cabeçalho X-Request-Id.
+  executar(origem, requestId = randomUUID()) {
     if (this.emAndamento) return this.emAndamento;
     clearTimeout(this.timer);
     this.proximoEm = null;
     const inicio = Date.now();
-    this.emAndamento = this.ciclo(origem)
+    this.emAndamento = this.ciclo(origem, requestId)
       .finally(() => {
         this.emAndamento = null;
         this.agendar(Math.max(0, this.cfg.intervaloMs - (Date.now() - inicio)));
@@ -144,11 +158,12 @@ class TsePoller {
     return () => this.ouvintes.delete(fn);
   }
 
-  async ciclo(origem) {
+  async ciclo(origem, requestId) {
+    const inicio = Date.now();
     this.ultimaTentativa = new Date().toISOString();
     this.ultimaOrigem = origem;
     this.contagem[origem]++;
-    const resultados = await Promise.allSettled(ARQUIVOS.map((a) => this.buscar(a)));
+    const resultados = await Promise.allSettled(ARQUIVOS.map((a) => this.buscar(a, requestId)));
     let sucessos = 0;
     resultados.forEach((r, i) => {
       const abr = ARQUIVOS[i];
@@ -162,21 +177,23 @@ class TsePoller {
     if (sucessos > 0) this.ultimoSucesso = this.ultimaTentativa;
     this.ciclos++;
 
-    const falhas = ARQUIVOS.length - sucessos;
-    const hora = new Date().toLocaleTimeString('pt-BR');
-    const rotulo = `[${hora}] ciclo ${this.ciclos} (${origem})`;
-    if (falhas) {
-      const brErro = this.erros.get('br');
-      console.warn(`${rotulo}: ${sucessos}/${ARQUIVOS.length} ok` + (brErro ? ` | br: ${brErro.erro}` : ''));
+    const campos = {
+      requestId, ciclo: this.ciclos, origem, ok: sucessos, total: ARQUIVOS.length, duracaoMs: Date.now() - inicio,
+    };
+    if (sucessos < ARQUIVOS.length) {
+      const erros = Object.fromEntries([...this.erros].map(([abr, e]) => [abr, e.erro]));
+      log.warn('ciclo com falhas', { ...campos, erros });
     } else if (origem === 'manual' || this.ciclos === 1 || this.ciclos % 10 === 0) {
-      console.log(`${rotulo}: ${sucessos}/${ARQUIVOS.length} arquivos ok`);
+      log.info('ciclo concluído', campos);
+    } else {
+      log.debug('ciclo concluído', campos);
     }
   }
 
-  async buscar(abr) {
+  async buscar(abr, requestId) {
     const url = urlArquivo(this.cfg, abr);
     const anterior = this.cache.get(abr);
-    const headers = { Accept: 'application/json' };
+    const headers = { Accept: 'application/json', 'X-Request-Id': requestId };
     // Requisição condicional: se nada mudou o TSE responde 304 sem corpo.
     if (anterior?.etag) headers['If-None-Match'] = anterior.etag;
 
@@ -186,10 +203,14 @@ class TsePoller {
       });
 
     if (resp.status === 304 && anterior) {
+      await descartarCorpo(resp);
       anterior.obtidoEm = Date.now();
       return anterior.dados;
     }
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    if (!resp.ok) {
+      await descartarCorpo(resp);
+      throw new Error(`HTTP ${resp.status}`);
+    }
 
     let dados;
     try {
@@ -221,4 +242,4 @@ class TsePoller {
   }
 }
 
-module.exports = { TsePoller, urlArquivo, urlFoto, parseArquivo, num, ARQUIVOS };
+module.exports = { TsePoller, urlArquivo, urlFoto, parseArquivo, num, descartarCorpo, ARQUIVOS };

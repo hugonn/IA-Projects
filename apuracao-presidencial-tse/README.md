@@ -53,7 +53,7 @@ a interface a qualquer momento, mesmo fora do período eleitoral.
 |---|---|---|
 | Backend | **Node.js** (≥ 18.17) | `fetch` nativo, `AbortSignal.timeout`, sem dependências além do Express |
 | Backend | **Express 4** | API REST, Server-Sent Events, arquivos estáticos e simulador do TSE |
-| Frontend | **HTML5 + JavaScript puro** | Renderização sem framework, atualização incremental do DOM |
+| Frontend | **HTML5 + JavaScript puro (ES Modules)** | Sem framework, componentes com atualização incremental do DOM |
 | Frontend | **Tailwind CSS 3** (CDN) | Layout, tema escuro/claro e responsividade |
 | Frontend | **SVG** | Mapa do Brasil interativo e gráficos (barras, réguas, barras divergentes) |
 | Dados | **API pública do TSE** | Resultados por Brasil, UF e exterior (`resultados.tse.jus.br`) |
@@ -93,6 +93,43 @@ flowchart LR
 - **Simulador** ([server/mock.js](server/mock.js)): gera arquivos no mesmo formato do TSE com apuração
   progressiva, candidatos fictícios, viradas e falhas de rede propositais. O poller consulta o simulador pelo
   mesmo caminho de código usado com o TSE real.
+- **Frontend** ([public/js](public/js)): módulos separados por responsabilidade. `rede.js` cuida da conexão
+  (SSE único e polling de reserva), `estado.js` guarda o estado e avisa os componentes, e cada arquivo em
+  `componentes/` monta sua parte da tela uma vez e depois só atualiza os valores que mudaram.
+
+---
+
+## Boas práticas aplicadas
+
+| Área | Prática | Onde |
+|---|---|---|
+| Chamadas HTTP | Timeout em toda chamada (`AbortSignal.timeout`), inclusive no navegador | [server/tse.js](server/tse.js), [server/projecao.js](server/projecao.js), [public/js/rede.js](public/js/rede.js) |
+| Chamadas HTTP | `res.ok` verificado antes de ler a resposta | mesmos arquivos |
+| Chamadas HTTP | Corpo de respostas descartadas (erro e `304`) cancelado com `res.body.cancel()` para liberar a conexão | `descartarCorpo` em [server/tse.js](server/tse.js) |
+| Rastreabilidade | `X-Request-Id` aceito ou gerado em cada requisição, devolvido na resposta, repassado ao TSE e presente nos logs. A atualização manual usa o mesmo id da requisição que a pediu | [server/app.js](server/app.js) |
+| Contratos | JSON do TSE validado (`parseArquivo`) e snapshot validado no navegador antes do uso | [server/tse.js](server/tse.js), [public/js/contrato.js](public/js/contrato.js) |
+| Express | Rotas `async` envolvidas por um wrapper que encaminha erros para o middleware central | `assincrono` em [server/app.js](server/app.js) |
+| Express | Erros respondidos em JSON com `requestId`, sem stack trace (o detalhe vai só para o log) | [server/app.js](server/app.js) |
+| Express | `X-Powered-By` desativado e corpo JSON limitado a 100 kb | [server/app.js](server/app.js) |
+| SSE | `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `flushHeaders()` e `retry` | [server/sse.js](server/sse.js) |
+| SSE | Heartbeat `: ping` a cada 20 s, desligado quando não há clientes; cliente removido no `close` | [server/sse.js](server/sse.js) |
+| SSE | Snapshot montado uma vez por ciclo e reaproveitado por todos os clientes | [server/app.js](server/app.js) |
+| Runtime | Logs estruturados em JSON (timestamp, nível, mensagem, `requestId`), nível ajustável por `LOG_NIVEL` | [server/logger.js](server/logger.js) |
+| Runtime | Encerramento gracioso em `SIGINT`/`SIGTERM`: para o poller, fecha as conexões SSE e o servidor, com saída forçada após 5 s | [server/index.js](server/index.js) |
+| Runtime | Configuração centralizada em variáveis de ambiente | [server/config.js](server/config.js) |
+| Testes | `node:test` e `node:assert/strict`, sem dependências, incluindo o contrato da API | [tests/](tests) |
+| Frontend | Nenhum `innerHTML` com dados da API: tudo por `createElement`/`textContent` (helpers `h()` e `s()`) | [public/js/dom.js](public/js/dom.js) |
+| Frontend | Atualização incremental: listas reconciliadas por chave (`sincronizarLista`), nós reaproveitados entre atualizações | [public/js/dom.js](public/js/dom.js) |
+| Frontend | `<script type="module">` e separação entre rede, estado e componentes | [public/js](public/js) |
+| Frontend | Uma única conexão `EventSource` por sessão, com polling de reserva e reabertura no `onerror` | [public/js/rede.js](public/js/rede.js) |
+| Frontend | Tema aplicado no `<head>` de forma síncrona e cor de fundo definida em CSS próprio, sem piscada antes do Tailwind | [public/index.html](public/index.html), [public/styles.css](public/styles.css) |
+| Acessibilidade | Tags semânticas (`header`, `main`, `section`, `article`, `figure`, `footer`), `aria-live="polite"` com um resumo curto, `role="status"`/`alert`, barra de progresso com `aria-valuenow`, botões com `aria-pressed` e link para pular ao conteúdo | [public/index.html](public/index.html) |
+
+**Decisão sobre `worker_threads`:** o guia recomenda isolar cálculos pesados em threads. Medimos antes de
+decidir. O simulador levava ~25 ms por ciclo porque recalculava o Brasil inteiro para cada um dos 29 arquivos.
+Corrigimos o algoritmo com memorização por instante, e o custo caiu para ~1 ms. A montagem do snapshot leva
+~0,3 ms. Com esses números, uma thread separada só adicionaria cópia de dados e complexidade sem ganho real, então
+o cálculo continua na thread principal.
 
 ---
 
@@ -105,6 +142,9 @@ flowchart LR
 | `POST` | `/api/atualizar` | Busca os dados do TSE imediatamente e reinicia a contagem da atualização automática |
 | `POST` | `/api/mock/reset` | (modo simulação) Reinicia a apuração simulada do zero |
 | `GET` | `/mock-tse/oficial/ele{ano}/{eleicao}/dados/{uf}/{uf}-c0001-e{eleicao}-u.json` | (modo simulação) Arquivos no formato do TSE |
+
+Todas as respostas trazem o cabeçalho `X-Request-Id` (o enviado pelo cliente, se válido, ou um novo). Erros
+respondem em JSON no formato `{ "erro": "...", "requestId": "..." }`.
 
 Resumo do snapshot (`/api/apuracao`):
 
@@ -180,7 +220,7 @@ Abra **http://localhost:3000**. Para parar, `Ctrl + C`.
 | `npm run mock:2turno` | Simulação de 2º turno |
 | `npm run dev` | Simulação reiniciando o servidor quando o código muda |
 | `npm test` | Roda os testes automatizados |
-| `npm run mapa` | Baixa a malha do IBGE e regenera `public/mapa-brasil.js` |
+| `npm run mapa` | Baixa a malha do IBGE e regenera `public/js/mapa-brasil.js` |
 
 ### Configuração
 
@@ -198,6 +238,10 @@ Passe as opções depois de `--` (ex.: `npm run mock -- --duracao=3 --falhas=0.2
 | `--mock` | `MODO_MOCK=true` | — | Liga a simulação |
 | `--duracao=` | `MOCK_DURACAO_MIN` | `8` | Minutos até a simulação chegar a ~100% |
 | `--falhas=` | `MOCK_FALHAS` | `0.04` | Fração de respostas 503/timeout simuladas |
+| `--heartbeat=` | `SSE_HEARTBEAT_MS` | `20000` | Intervalo do heartbeat das conexões SSE |
+| `--shutdown-timeout=` | `SHUTDOWN_TIMEOUT_MS` | `5000` | Tempo máximo do encerramento gracioso |
+| `--limite-corpo=` | `LIMITE_CORPO` | `100kb` | Tamanho máximo do corpo JSON aceito |
+| — | `LOG_NIVEL` | `info` | Nível mínimo de log: `debug`, `info`, `warn`, `error` ou `silencioso` |
 
 ---
 
@@ -216,13 +260,26 @@ npm test
 | [tests/tse.test.js](tests/tse.test.js) | Montagem das URLs do TSE, conversão de números com vírgula, leitura do `-u.json`, ordenação dos candidatos e rejeição de respostas inválidas |
 | [tests/mock.test.js](tests/mock.test.js) | Simulador: arquivo nacional igual à soma das UFs, votos e seções nunca diminuem, totalização final com situação definida, 2º turno com dois candidatos |
 | [tests/projecao.test.js](tests/projecao.test.js) | Projeção e calculadora de virada contra um cenário calculado à mão (% necessário, % recebido, margem final), "matematicamente definido" e agregação regional |
+| [tests/api.test.js](tests/api.test.js) | Contrato de `/api/apuracao`, ausência de `X-Powered-By`, repasse e geração de `X-Request-Id`, atualização manual, erro 500 sem stack trace, 404 e 400/413 em JSON, SSE (cabeçalhos, snapshot inicial, heartbeat e limpeza ao desconectar) |
+| [tests/frontend.test.js](tests/frontend.test.js) | Módulos do navegador sem DOM: formatação pt-BR, validação do snapshot, URLs de foto seguras e cores dos candidatos |
 
-Resultado atual: **13 testes, 13 passando**.
+Resultado atual: **25 testes, 25 passando**.
 
 ### Testes manuais e de integração
 
 Feitos contra o TSE real, o simulador e o navegador (desktop e celular), durante a apuração do
-2º turno de 25/10/2026.
+2º turno de 25/10/2026. Depois da revisão de boas práticas, a interface foi conferida de novo no simulador.
+
+#### Revisão de boas práticas
+
+| Teste | Resultado |
+|---|---|
+| Nós do DOM entre atualizações | Mesmo total (1.268 nós) em três ciclos seguidos; os mesmos elementos são reaproveitados |
+| Uso de `innerHTML` em `public/js` | Nenhum |
+| Encerramento com `SIGINT` e um cliente SSE conectado | Conexão fechada, servidor encerrado e saída com código 0 |
+| Custo do simulador por ciclo | De ~25 ms para ~1 ms após a memorização |
+| Mapa, tooltip, modos de cor, refresh manual, tabela de estados e tema claro | Funcionando após a migração para ES Modules |
+| Celular (375 px) e desktop | Sem rolagem horizontal (os cartões do mapa à direita passavam 3 px da borda e foram ajustados) |
 
 #### Integração com o TSE
 
@@ -295,7 +352,10 @@ npm start -- --tse=https://resultados.tse.invalid
 ```
 ├── package.json
 ├── server/
-│   ├── index.js        Express, rotas da API e inicialização
+│   ├── index.js        Inicialização, porta em uso e encerramento gracioso
+│   ├── app.js          Express: rotas da API, X-Request-Id, erros e hardening
+│   ├── sse.js          Canal SSE com heartbeat e limpeza de conexões
+│   ├── logger.js       Logs estruturados em JSON
 │   ├── config.js       Argumentos e variáveis de ambiente
 │   ├── tse.js          URLs do TSE, parser do JSON e poller com cache
 │   ├── agregacao.js    Visão nacional, regional e por estado
@@ -303,12 +363,18 @@ npm start -- --tse=https://resultados.tse.invalid
 │   ├── regioes.js      UFs e regiões do IBGE
 │   └── mock.js         Simulador no formato do TSE
 ├── public/
-│   ├── index.html      Layout (Tailwind)
-│   ├── app.js          Renderização, SSE, atualização manual e contadores
-│   ├── mapa.js         Mapa do Brasil interativo
-│   ├── mapa-brasil.js  Contornos SVG das UFs (gerado)
-│   ├── util.js         Formatação pt-BR e cores dos candidatos
-│   └── styles.css
+│   ├── index.html      Estrutura semântica da página
+│   ├── styles.css      Complementos ao Tailwind
+│   └── js/
+│       ├── main.js         Ponto de entrada: liga rede, estado e componentes
+│       ├── rede.js         SSE único, polling de reserva e ações (atualizar, reiniciar)
+│       ├── estado.js       Estado da aplicação com notificação
+│       ├── dom.js          Criação segura de elementos e reconciliação de listas
+│       ├── contrato.js     Validação do snapshot e de URLs
+│       ├── formato.js      Formatação pt-BR
+│       ├── cores.js        Cores dos candidatos e das regiões
+│       ├── mapa-brasil.js  Contornos SVG das UFs (gerado)
+│       └── componentes/    Cabeçalho, resumo, candidatos, projeção, virada, mapa e regiões
 ├── scripts/
 │   └── gerar-mapa.js   Gera mapa-brasil.js a partir da malha do IBGE
 ├── tests/              Testes automatizados (node:test)

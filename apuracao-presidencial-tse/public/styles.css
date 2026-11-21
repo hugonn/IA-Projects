@@ -1,4 +1,9 @@
-/* Complementos ao Tailwind (componentes reutilizados pelo app.js). */
+/* Complementos ao Tailwind (componentes reutilizados por public/js). */
+
+/* Fundo e esquema de cores aplicados antes de o Tailwind (CDN) gerar as classes: sem piscada branca
+   no tema escuro. A classe "dark" no <html> é definida por um script síncrono no <head>. */
+html { background: #f1f5f9; color: #0f172a; }
+html.dark { background: #070b14; color: #f1f5f9; color-scheme: dark; }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
 

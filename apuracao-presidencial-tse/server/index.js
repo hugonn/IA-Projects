@@ -1,72 +1,65 @@
-const path = require('path');
-const express = require('express');
-const cfg = require('./config');
-const { TsePoller } = require('./tse');
-const { montarSnapshot } = require('./agregacao');
-const { criarRotasMock } = require('./mock');
-const { Referencia } = require('./projecao');
+// Inicialização do servidor: cria poller, aplicação e trata o encerramento gracioso.
 
-const app = express();
+const cfg = require('./config');
+const log = require('./logger');
+const { TsePoller } = require('./tse');
+const { Referencia } = require('./projecao');
+const { SimuladorApuracao } = require('./mock');
+const { criarApp } = require('./app');
+
 const poller = new TsePoller(cfg);
 const referencia = cfg.referencia ? new Referencia(cfg, cfg.referencia) : null;
-const snapshot = () => montarSnapshot(poller, cfg, referencia);
-
-// O 1º turno (referência da projeção) é baixado uma vez; se falhar, tenta de novo a cada ciclo.
-if (referencia) poller.aoAtualizar(() => { if (!referencia.completa) referencia.carregar(); });
-
-app.use(express.static(path.join(__dirname, '..', 'public')));
-
-if (cfg.mock) {
-  const { router } = criarRotasMock(cfg);
-  app.use('/mock-tse', router);
-  // Reinicia simulação e descarta o cache do poller.
-  app.post('/api/mock/reset', async (req, res) => {
-    await fetch(`${cfg.tseBaseUrl}/reset`, { method: 'POST' });
-    poller.limpar();
-    await poller.executar('manual');
-    res.json({ ok: true });
-  });
-}
-
-// Atualização manual: busca o TSE imediatamente e reinicia a contagem da automática.
-app.post('/api/atualizar', async (req, res) => {
-  await poller.executar('manual');
-  res.set('Cache-Control', 'no-store').json(snapshot());
-});
-
-// Último snapshot consolidado (o frontend consulta a cada 6 s).
-app.get('/api/apuracao', (req, res) => {
-  res.set('Cache-Control', 'no-store').json(snapshot());
-});
-
-// Server-Sent Events: empurra o snapshot a cada ciclo do poller.
-app.get('/api/stream', (req, res) => {
-  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
-  res.flushHeaders();
-  const enviar = () => res.write(`data: ${JSON.stringify(snapshot())}\n\n`);
-  if (poller.ciclos > 0) enviar();
-  const remover = poller.aoAtualizar(enviar);
-  req.on('close', remover);
-});
+const simulador = cfg.mock
+  ? new SimuladorApuracao({ turno: cfg.turno, duracaoMin: cfg.mockDuracaoMin, eleicao: cfg.eleicao })
+  : null;
+const { app, sse } = criarApp({ cfg, poller, referencia, simulador });
 
 const servidor = app.listen(cfg.port, () => {
-  const linha = '─'.repeat(64);
-  console.log(linha);
-  console.log(' Apuração Presidencial — painel local');
-  console.log(` Modo:      ${cfg.mock ? `SIMULAÇÃO (mock, ${cfg.turno}º turno, ${cfg.mockDuracaoMin} min)` : 'TSE oficial'}`);
-  console.log(` Eleição:   ${cfg.ano} / código ${cfg.eleicao}`);
-  console.log(` Fonte:     ${cfg.tseBaseUrl}`);
-  console.log(` Intervalo: ${cfg.intervaloMs / 1000}s  |  timeout: ${cfg.timeoutMs / 1000}s`);
-  console.log(` Painel:    http://localhost:${cfg.port}`);
-  console.log(linha);
+  log.info('servidor iniciado', {
+    painel: `http://localhost:${cfg.port}`,
+    modo: cfg.mock ? 'simulacao' : 'tse',
+    turno: cfg.mock ? cfg.turno : undefined,
+    ano: cfg.ano,
+    eleicao: cfg.eleicao,
+    fonte: cfg.tseBaseUrl,
+    intervaloMs: cfg.intervaloMs,
+    timeoutMs: cfg.timeoutMs,
+  });
   poller.iniciar();
 });
 
 servidor.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`\nA porta ${cfg.port} já está em uso (outro servidor do painel aberto?).`);
-    console.error(`Feche o outro processo ou use outra porta:  npm run ${cfg.mock ? 'mock' : 'start'} -- --porta=3001\n`);
+    log.error('porta em uso', {
+      porta: cfg.port,
+      sugestao: `feche o outro processo ou use outra porta: npm run ${cfg.mock ? 'mock' : 'start'} -- --porta=3001`,
+    });
     process.exit(1);
   }
   throw err;
 });
+
+// Encerramento gracioso: para o poller, fecha as conexões SSE e espera o servidor HTTP fechar.
+let encerrando = false;
+function encerrar(sinal) {
+  if (encerrando) return;
+  encerrando = true;
+  log.info('encerrando', { sinal, clientesSse: sse.clientes.size });
+
+  poller.parar();
+  sse.encerrar();
+  servidor.close(() => {
+    log.info('servidor encerrado');
+    process.exit(0);
+  });
+  servidor.closeIdleConnections?.();
+
+  // Se algo segurar o processo, força a saída depois do limite configurado.
+  setTimeout(() => {
+    log.warn('encerramento forçado', { aposMs: cfg.shutdownTimeoutMs });
+    process.exit(1);
+  }, cfg.shutdownTimeoutMs).unref();
+}
+
+process.on('SIGINT', () => encerrar('SIGINT'));
+process.on('SIGTERM', () => encerrar('SIGTERM'));
