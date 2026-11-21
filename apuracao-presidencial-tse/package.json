@@ -1,0 +1,30 @@
+{
+  "name": "apuracao-presidencial-tse",
+  "version": "1.0.0",
+  "description": "Painel local de apuração da eleição presidencial em tempo real com dados oficiais do TSE",
+  "main": "server/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node server/index.js",
+    "start:1turno": "node server/index.js --turno=1",
+    "mock": "node server/index.js --mock",
+    "mock:2turno": "node server/index.js --mock --turno=2",
+    "dev": "node --watch server/index.js --mock",
+    "test": "node --test",
+    "mapa": "node scripts/gerar-mapa.js"
+  },
+  "keywords": [
+    "eleicoes",
+    "tse",
+    "apuracao",
+    "dashboard",
+    "express",
+    "server-sent-events"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

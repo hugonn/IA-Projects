@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apuração Presidencial</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 14'><rect width='20' height='14' fill='%23009B3A'/><path d='M10 1.7 18.3 7 10 12.3 1.7 7z' fill='%23FEDF00'/><circle cx='10' cy='7' r='3.5' fill='%23002776'/></svg>" />
+  <script>
+    // Aplica o tema salvo antes de renderizar (padrão: escuro).
+    try { if (localStorage.getItem('tema') === 'claro') document.documentElement.classList.remove('dark'); } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 font-sans antialiased">
+
+  <!-- Cabeçalho -->
+  <header class="sticky top-0 z-30 border-b border-slate-200 dark:border-white/10 bg-white/80 dark:bg-[#070b14]/80 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <svg viewBox="0 0 20 14" class="h-7 w-10 rounded-sm shadow shrink-0" aria-hidden="true">
+          <rect width="20" height="14" fill="#009B3A" /><path d="M10 1.7 18.3 7 10 12.3 1.7 7z" fill="#FEDF00" /><circle cx="10" cy="7" r="3.5" fill="#002776" />
+        </svg>
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-lg font-bold leading-tight truncate">Apuração Presidencial <span id="titulo-turno" class="text-slate-500 dark:text-slate-400 font-semibold"></span></h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 truncate">Dados oficiais do TSE · atualização automática</p>
+        </div>
+      </div>
+      <div class="ml-auto flex items-center gap-2 sm:gap-3">
+        <span id="badge-status" class="badge badge-neutro"><span class="dot"></span><span>Conectando…</span></span>
+        <!-- Atualização: contagem regressiva, contadores e refresh manual -->
+        <div class="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] pl-1.5 pr-1 py-1">
+          <div class="relative h-8 w-8 shrink-0" title="Segundos até a próxima atualização automática">
+            <svg viewBox="0 0 36 36" class="h-8 w-8 -rotate-90">
+              <circle cx="18" cy="18" r="15" fill="none" class="stroke-slate-200 dark:stroke-white/10" stroke-width="3.5" />
+              <circle id="anel-contagem" cx="18" cy="18" r="15" fill="none" class="stroke-sky-500" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="94.25" stroke-dashoffset="94.25" />
+            </svg>
+            <span id="contagem-seg" class="absolute inset-0 grid place-items-center font-mono text-[11px] font-bold tabular-nums">–</span>
+          </div>
+          <div class="hidden md:block text-[11px] leading-tight text-slate-500 dark:text-slate-400 tabular-nums">
+            <div>Auto <b id="cont-auto" class="font-mono text-slate-800 dark:text-slate-100">0</b> · Manual <b id="cont-manual" class="font-mono text-slate-800 dark:text-slate-100">0</b></div>
+            <div>Atualizado <span id="ultima-atualizacao" class="font-mono">--:--:--</span></div>
+          </div>
+          <button id="btn-refresh" class="btn inline-flex items-center gap-1.5 disabled:opacity-60" title="Buscar os dados do TSE agora">
+            <svg id="icone-refresh" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            <span class="hidden sm:inline">Atualizar</span>
+          </button>
+        </div>
+        <button id="btn-reset-mock" class="hidden btn" title="Reiniciar simulação do zero"><span class="sm:hidden">↺ Sim.</span><span class="hidden sm:inline">Reiniciar simulação</span></button>
+        <button id="btn-tema" class="btn !px-2.5" title="Alternar tema claro/escuro" aria-label="Alternar tema">
+          <svg class="h-4 w-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="h-4 w-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="aviso" class="hidden border-t border-amber-300/40 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 text-xs">
+      <div class="mx-auto max-w-7xl px-4 py-1.5" id="aviso-texto"></div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-5 space-y-5">
+
+    <!-- Progresso nacional + KPIs -->
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_2fr]">
+      <div class="card p-5">
+        <div class="flex items-baseline justify-between gap-2">
+          <h2 class="eyebrow">Urnas apuradas · Brasil</h2>
+          <span id="badge-final" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">Totalização finalizada</span>
+        </div>
+        <div class="mt-2 flex items-end gap-2">
+          <span id="pct-apurado" class="text-5xl sm:text-6xl font-extrabold tracking-tight tabular-nums">0,00</span>
+          <span class="text-2xl font-bold text-slate-400 mb-1.5">%</span>
+        </div>
+        <div class="mt-3 h-3 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+          <div id="barra-apurado" class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-sky-500 transition-[width] duration-700" style="width:0%"></div>
+        </div>
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400 tabular-nums" id="secoes-info">— seções totalizadas</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" id="totalizacao-info"></p>
+      </div>
+      <div class="grid grid-cols-2 xl:grid-cols-4 gap-4" id="kpis">
+        <!-- preenchido por app.js -->
+      </div>
+    </section>
+
+    <!-- Candidatos + Mapa -->
+    <section class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div class="flex flex-col gap-5 min-w-0">
+        <div class="card p-4 sm:p-5">
+          <div class="flex items-baseline justify-between mb-3">
+            <h2 class="eyebrow">Candidatos · % dos votos válidos</h2>
+            <span class="text-xs text-slate-500 dark:text-slate-400 tabular-nums" id="validos-total"></span>
+          </div>
+          <!-- Barra proporcional: cada candidato ocupa a fatia exata dos votos válidos -->
+          <div id="disputa" class="hidden mb-4">
+            <div class="relative h-4 rounded-full overflow-hidden flex bg-slate-200 dark:bg-white/10" id="disputa-barra"></div>
+            <div class="relative h-4 mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+              <span class="absolute left-1/2 -translate-x-1/2 whitespace-nowrap">▲ 50%</span>
+            </div>
+            <div id="disputa-diferenca" class="mt-1 flex flex-wrap items-baseline justify-center gap-x-2 text-sm"></div>
+          </div>
+          <ol id="lista-candidatos" class="relative space-y-2.5"></ol>
+          <p id="sem-dados" class="hidden py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aguardando os primeiros dados do TSE…</p>
+        </div>
+
+        <!-- Projeção do resultado final -->
+        <div class="card p-4 sm:p-5 flex-1" id="card-projecao">
+          <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h2 class="eyebrow">Projeção do resultado final</h2>
+            <span id="projecao-selo"></span>
+          </div>
+          <div id="projecao-corpo" class="space-y-4 text-sm">
+            <p class="text-slate-500 dark:text-slate-400">Aguardando dados…</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="eyebrow">Apuração por região</h2>
+          <div class="flex items-center gap-1 text-xs" role="group" aria-label="Cor do mapa">
+            <button class="seg ativo" data-modo-mapa="regioes">Regiões</button>
+            <button class="seg" data-modo-mapa="apuracao">Urnas apuradas</button>
+            <button class="seg" data-modo-mapa="lider">Líder por UF</button>
+          </div>
+        </div>
+        <div id="mapa" class="relative w-full select-none" style="aspect-ratio: 1140 / 1027"></div>
+        <div id="legenda-mapa" class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400"></div>
+      </div>
+    </section>
+
+    <!-- Calculadora de virada (1º x 2º colocados) -->
+    <section id="painel-virada" class="card p-4 sm:p-5 hidden">
+      <div class="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+        <h2 class="eyebrow">Calculadora de virada</h2>
+        <span id="virada-selo"></span>
+      </div>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+        <div id="virada-resumo" class="space-y-4 min-w-0"></div>
+        <div class="min-w-0">
+          <div class="flex items-baseline justify-between gap-2 mb-2">
+            <h3 class="text-sm font-semibold">Ganho projetado por estado nos votos que faltam</h3>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">mantido o ritmo de cada estado</span>
+          </div>
+          <div id="virada-legenda" class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1 px-1"></div>
+          <div id="virada-tabela" class="max-h-[440px] overflow-y-auto pr-1 -mr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards regionais -->
+    <section>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5" id="cards-regioes"></div>
+    </section>
+
+    <!-- Detalhe da região selecionada -->
+    <section id="detalhe-regiao" class="card p-4 sm:p-5 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-bold" id="detalhe-titulo"></h2>
+        <button class="btn" id="detalhe-fechar">Fechar</button>
+      </div>
+      <div class="overflow-x-auto -mx-4 sm:mx-0">
+        <table class="w-full text-sm min-w-[560px]">
+          <thead class="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <tr class="border-b border-slate-200 dark:border-white/10">
+              <th class="py-2 px-4 sm:px-2 font-semibold">Estado</th>
+              <th class="py-2 px-2 font-semibold w-48">Urnas apuradas</th>
+              <th class="py-2 px-2 font-semibold">1º</th>
+              <th class="py-2 px-2 font-semibold">2º</th>
+            </tr>
+          </thead>
+          <tbody id="detalhe-corpo"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="pb-6 pt-2 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+      <p>Fonte: <a id="link-fonte" class="underline decoration-dotted hover:text-sky-500" target="_blank" rel="noopener" href="https://resultados.tse.jus.br">resultados.tse.jus.br</a>. Percentuais de candidatos calculados sobre os votos válidos. Regiões agregadas a partir dos arquivos estaduais.</p>
+      <p>Painel não oficial, para acompanhamento. O resultado oficial é o divulgado pelo TSE.</p>
+    </footer>
+  </main>
+
+  <div id="tooltip" class="pointer-events-none fixed z-50 hidden"></div>
+
+  <script src="util.js"></script>
+  <script src="mapa-brasil.js"></script>
+  <script src="mapa.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

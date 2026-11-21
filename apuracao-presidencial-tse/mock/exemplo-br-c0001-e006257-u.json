@@ -1,0 +1,406 @@
+{
+  "ele": "6257",
+  "t": "1",
+  "f": "o",
+  "sup": "n",
+  "tpabr": "br",
+  "cdabr": "br",
+  "dg": "25/10/2026",
+  "hg": "15:33:21",
+  "idg": "1792953201",
+  "dt": "25/10/2026",
+  "ht": "15:33:21",
+  "dv": "s",
+  "tf": "n",
+  "and": "n",
+  "carg": [
+    {
+      "cd": "1",
+      "nmn": "Presidente",
+      "nmm": "Presidente",
+      "nmf": "Presidente",
+      "nv": "1",
+      "fed": [],
+      "agr": [
+        {
+          "n": "280001018000",
+          "nm": "PARTIDO DO FUTURO AMPLO",
+          "tp": "i",
+          "com": "PFA",
+          "tvtn": "31276329",
+          "tvan": "31276329",
+          "par": [
+            {
+              "n": "18",
+              "sg": "PFA",
+              "nm": "PARTIDO DO FUTURO AMPLO",
+              "nfed": "",
+              "tvtn": "31276329",
+              "tvan": "31276329",
+              "cand": [
+                {
+                  "n": "18",
+                  "sqcand": "900000000018",
+                  "nm": "ANA BEATRIZ MOREIRA",
+                  "nmu": "ANA MOREIRA",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "2",
+                  "e": "n",
+                  "st": "",
+                  "vap": "31276329",
+                  "pvap": "39,71",
+                  "pvapn": "39,711923474",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000118",
+                      "nm": "JORGE AMADO LIMA",
+                      "nmu": "JORGE AMADO LIMA",
+                      "sgp": "PFA"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001047000",
+          "nm": "MOVIMENTO RENOVA NAÇÃO",
+          "tp": "i",
+          "com": "MRN",
+          "tvtn": "32262040",
+          "tvan": "32262040",
+          "par": [
+            {
+              "n": "47",
+              "sg": "MRN",
+              "nm": "MOVIMENTO RENOVA NAÇÃO",
+              "nfed": "",
+              "tvtn": "32262040",
+              "tvan": "32262040",
+              "cand": [
+                {
+                  "n": "47",
+                  "sqcand": "900000000047",
+                  "nm": "CARLOS EDUARDO TAVARES",
+                  "nmu": "CARLOS TAVARES",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "1",
+                  "e": "n",
+                  "st": "",
+                  "vap": "32262040",
+                  "pvap": "40,96",
+                  "pvapn": "40,963492345",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000147",
+                      "nm": "SÔNIA BRAGA",
+                      "nmu": "SÔNIA BRAGA",
+                      "sgp": "MRN"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001024000",
+          "nm": "PARTIDO VERDE SOCIAL",
+          "tp": "i",
+          "com": "PVS",
+          "tvtn": "6183511",
+          "tvan": "6183511",
+          "par": [
+            {
+              "n": "24",
+              "sg": "PVS",
+              "nm": "PARTIDO VERDE SOCIAL",
+              "nfed": "",
+              "tvtn": "6183511",
+              "tvan": "6183511",
+              "cand": [
+                {
+                  "n": "24",
+                  "sqcand": "900000000024",
+                  "nm": "HELENA SOUZA PRADO",
+                  "nmu": "HELENA PRADO",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "3",
+                  "e": "n",
+                  "st": "",
+                  "vap": "6183511",
+                  "pvap": "7,85",
+                  "pvapn": "7,851276780",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000124",
+                      "nm": "OTÁVIO REIS",
+                      "nmu": "OTÁVIO REIS",
+                      "sgp": "PVS"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001036000",
+          "nm": "UNIÃO DEMOCRÁTICA POPULAR",
+          "tp": "i",
+          "com": "UDP",
+          "tvtn": "3854940",
+          "tvan": "3854940",
+          "par": [
+            {
+              "n": "36",
+              "sg": "UDP",
+              "nm": "UNIÃO DEMOCRÁTICA POPULAR",
+              "nfed": "",
+              "tvtn": "3854940",
+              "tvan": "3854940",
+              "cand": [
+                {
+                  "n": "36",
+                  "sqcand": "900000000036",
+                  "nm": "JOÃO PEDRO ALENCAR",
+                  "nmu": "JOÃO ALENCAR",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "4",
+                  "e": "n",
+                  "st": "",
+                  "vap": "3854940",
+                  "pvap": "4,89",
+                  "pvapn": "4,894662742",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000136",
+                      "nm": "CLARA MENDES",
+                      "nmu": "CLARA MENDES",
+                      "sgp": "UDP"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001059000",
+          "nm": "PARTIDO LIBERDADE BRASIL",
+          "tp": "i",
+          "com": "PLB",
+          "tvtn": "2589640",
+          "tvan": "2589640",
+          "par": [
+            {
+              "n": "59",
+              "sg": "PLB",
+              "nm": "PARTIDO LIBERDADE BRASIL",
+              "nfed": "",
+              "tvtn": "2589640",
+              "tvan": "2589640",
+              "cand": [
+                {
+                  "n": "59",
+                  "sqcand": "900000000059",
+                  "nm": "MARINA COSTA LIMA",
+                  "nmu": "MARINA LIMA",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "5",
+                  "e": "n",
+                  "st": "",
+                  "vap": "2589640",
+                  "pvap": "3,29",
+                  "pvapn": "3,288096423",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000159",
+                      "nm": "RUI FALCÃO NETO",
+                      "nmu": "RUI FALCÃO NETO",
+                      "sgp": "PLB"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001071000",
+          "nm": "NOVA AURORA",
+          "tp": "i",
+          "com": "NOVA",
+          "tvtn": "1412212",
+          "tvan": "1412212",
+          "par": [
+            {
+              "n": "71",
+              "sg": "NOVA",
+              "nm": "NOVA AURORA",
+              "nfed": "",
+              "tvtn": "1412212",
+              "tvan": "1412212",
+              "cand": [
+                {
+                  "n": "71",
+                  "sqcand": "900000000071",
+                  "nm": "RICARDO NUNES FARIAS",
+                  "nmu": "RICARDO FARIAS",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "6",
+                  "e": "n",
+                  "st": "",
+                  "vap": "1412212",
+                  "pvap": "1,79",
+                  "pvapn": "1,793102217",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000171",
+                      "nm": "LÍVIA ROCHA",
+                      "nmu": "LÍVIA ROCHA",
+                      "sgp": "NOVA"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001062000",
+          "nm": "PARTIDO TRABALHO E CIDADANIA",
+          "tp": "i",
+          "com": "PTC",
+          "tvtn": "701646",
+          "tvan": "701646",
+          "par": [
+            {
+              "n": "62",
+              "sg": "PTC",
+              "nm": "PARTIDO TRABALHO E CIDADANIA",
+              "nfed": "",
+              "tvtn": "701646",
+              "tvan": "701646",
+              "cand": [
+                {
+                  "n": "62",
+                  "sqcand": "900000000062",
+                  "nm": "LUÍSA FERNANDES DE PAULA",
+                  "nmu": "LUÍSA FERNANDES",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "7",
+                  "e": "n",
+                  "st": "",
+                  "vap": "701646",
+                  "pvap": "0,89",
+                  "pvapn": "0,890888194",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000162",
+                      "nm": "ANDRÉ VIANA",
+                      "nmu": "ANDRÉ VIANA",
+                      "sgp": "PTC"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "n": "280001083000",
+          "nm": "AVANÇA BRASIL",
+          "tp": "i",
+          "com": "AVB",
+          "tvtn": "477713",
+          "tvan": "477713",
+          "par": [
+            {
+              "n": "83",
+              "sg": "AVB",
+              "nm": "AVANÇA BRASIL",
+              "nfed": "",
+              "tvtn": "477713",
+              "tvan": "477713",
+              "cand": [
+                {
+                  "n": "83",
+                  "sqcand": "900000000083",
+                  "nm": "PAULO ROBERTO DIAS",
+                  "nmu": "PAULO DIAS",
+                  "dt": "01/01/1970",
+                  "dvt": "Válido",
+                  "seq": "8",
+                  "e": "n",
+                  "st": "",
+                  "vap": "477713",
+                  "pvap": "0,61",
+                  "pvapn": "0,606557825",
+                  "vs": [
+                    {
+                      "tp": "v",
+                      "sqcand": "900000000183",
+                      "nm": "TERESA LOPES",
+                      "nmu": "TERESA LOPES",
+                      "sgp": "AVB"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "s": {
+    "ts": "494001",
+    "st": "334284",
+    "pst": "67,67",
+    "pstn": "67,668688930",
+    "snt": "159717",
+    "psnt": "32,33"
+  },
+  "e": {
+    "te": "157092771",
+    "est": "106302595",
+    "pest": "67,67",
+    "esnt": "50790176",
+    "c": "82786630",
+    "pc": "77,88",
+    "a": "23515965",
+    "pa": "22,12"
+  },
+  "v": {
+    "tv": "82786630",
+    "vvc": "78758031",
+    "pvvc": "95,13",
+    "vv": "78758031",
+    "pvv": "100,00",
+    "vnom": "78758031",
+    "vb": "1457269",
+    "pvb": "1,76",
+    "tvn": "2571330",
+    "ptvn": "3,11",
+    "vn": "2571330",
+    "vnt": "0",
+    "van": "0",
+    "vansj": "0"
+  }
+}

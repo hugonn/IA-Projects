@@ -1,0 +1,5 @@
+# Normaliza finais de linha (LF no repositório) independente do sistema operacional.
+* text=auto eol=lf
+
+# Arquivo gerado: não entra em diffs nem nas estatísticas de linguagem do GitHub.
+public/mapa-brasil.js linguist-generated=true -diff

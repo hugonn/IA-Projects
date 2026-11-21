@@ -1,0 +1,105 @@
+/* Complementos ao Tailwind (componentes reutilizados pelo app.js). */
+
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+.card {
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgb(226 232 240);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+.dark .card {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02));
+  border-color: rgb(255 255 255 / 0.08);
+  box-shadow: none;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+.dark .eyebrow { color: rgb(148 163 184); }
+
+.btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  transition: background 0.15s;
+}
+.btn:hover { background: rgb(241 245 249); }
+.dark .btn { border-color: rgb(255 255 255 / 0.12); background: rgb(255 255 255 / 0.04); }
+.dark .btn:hover { background: rgb(255 255 255 / 0.1); }
+
+.seg {
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: rgb(100 116 139);
+  border: 1px solid transparent;
+}
+.seg.ativo { color: rgb(15 23 42); background: rgb(241 245 249); border-color: rgb(226 232 240); }
+.dark .seg.ativo { color: #fff; background: rgb(255 255 255 / 0.08); border-color: rgb(255 255 255 / 0.12); }
+
+/* Badge de status de conexão */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 0.3rem 0.65rem; border-radius: 999px; white-space: nowrap;
+}
+.badge .dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: currentColor; }
+.badge-vivo { color: rgb(220 38 38); background: rgb(220 38 38 / 0.1); }
+.badge-vivo .dot { animation: pulso 1.4s ease-in-out infinite; }
+.dark .badge-vivo { color: rgb(248 113 113); background: rgb(248 113 113 / 0.12); }
+.badge-mock { color: rgb(124 58 237); background: rgb(124 58 237 / 0.1); }
+.dark .badge-mock { color: rgb(196 181 253); background: rgb(167 139 250 / 0.15); }
+.badge-alerta { color: rgb(180 83 9); background: rgb(245 158 11 / 0.15); }
+.dark .badge-alerta { color: rgb(252 211 77); }
+.badge-erro { color: rgb(100 116 139); background: rgb(100 116 139 / 0.15); }
+.badge-neutro { color: rgb(100 116 139); background: rgb(100 116 139 / 0.12); }
+.badge-final { color: rgb(5 150 105); background: rgb(16 185 129 / 0.12); }
+.dark .badge-final { color: rgb(110 231 183); }
+
+@keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Candidatos: barras e reordenação animada */
+.cand { transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.barra { transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.flash { animation: flash 1s ease-out; }
+@keyframes flash { from { color: rgb(56 189 248); } }
+
+/* Candidato com cor preta: no tema escuro ganha contorno claro para não sumir no fundo. */
+:root { --cor-preto: #0a0a0a; }
+.dark [style*="--cor-preto"]:not(.mapa-uf) { box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.55); }
+.dark .mapa-uf[style*="--cor-preto"] { stroke: rgb(255 255 255 / 0.45); }
+
+/* Mapa */
+:root { --mapa-borda: #ffffff; --mapa-linha: rgb(71 85 105); --mapa-sigla: rgb(255 255 255 / 0.85); }
+.dark { --mapa-borda: #0b1120; --mapa-linha: rgb(148 163 184 / 0.7); }
+.mapa-uf {
+  cursor: pointer;
+  stroke: var(--mapa-borda);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  transition: fill 0.4s, opacity 0.25s;
+}
+.mapa-uf.uf-ativa { stroke-width: 1.6; }
+.mapa-uf.uf-hover { stroke: #fff; stroke-width: 3; }
+.mapa-sigla { font: 700 15px Inter, sans-serif; fill: var(--mapa-sigla); paint-order: stroke; stroke: rgb(0 0 0 / 0.25); stroke-width: 2px; }
+.mapa-linha { stroke: var(--mapa-linha); stroke-width: 1.5; fill: none; }
+.mapa-ponto { fill: var(--mapa-linha); }
+.girando { animation: girar 0.8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.regiao-label { transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s; }
+.regiao-label.ativo { transform: translate(-50%, -50%) scale(1.06) !important; box-shadow: 0 0 0 2px #fff, 0 10px 30px rgb(0 0 0 / 0.45); }
+.regiao-label.esmaecido { opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cand, .barra, .mapa-uf, .regiao-label { transition: none; }
+  .badge-vivo .dot { animation: none; }
+}
