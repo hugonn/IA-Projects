@@ -3,3 +3,6 @@
 
 # Arquivo gerado: não entra em diffs nem nas estatísticas de linguagem do GitHub.
 public/js/mapa-brasil.js linguist-generated=true -diff
+
+# Código de terceiros copiado sem alterações.
+public/vendor/** linguist-vendored=true -diff

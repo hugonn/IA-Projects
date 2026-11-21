@@ -14,9 +14,11 @@ const simulador = cfg.mock
   : null;
 const { app, sse } = criarApp({ cfg, poller, referencia, simulador });
 
-const servidor = app.listen(cfg.port, () => {
+const servidor = app.listen(cfg.port, cfg.host, () => {
   log.info('servidor iniciado', {
     painel: `http://localhost:${cfg.port}`,
+    host: cfg.host,
+    redeLocal: ['127.0.0.1', '::1', 'localhost'].includes(cfg.host) ? 'fechada (só este computador)' : 'aberta',
     modo: cfg.mock ? 'simulacao' : 'tse',
     turno: cfg.mock ? cfg.turno : undefined,
     ano: cfg.ano,

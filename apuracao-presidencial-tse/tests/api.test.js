@@ -9,6 +9,7 @@ const { criarApp } = require('../server/app');
 const cfg = {
   mock: false, ano: '2026', eleicao: '6258', tseBaseUrl: 'https://exemplo.invalid', ambiente: 'oficial',
   intervaloMs: 6000, sseHeartbeatMs: 50, limiteCorpo: '1kb',
+  host: '127.0.0.1', hostsPermitidos: [], intervaloMinimoManualMs: 0,
 };
 
 const poller = {
@@ -37,7 +38,7 @@ let servidor, base, sse;
 before(async () => {
   const criado = criarApp({ cfg, poller });
   sse = criado.sse;
-  servidor = criado.app.listen(0);
+  servidor = criado.app.listen(0, '127.0.0.1');
   await new Promise((r) => servidor.once('listening', r));
   base = `http://127.0.0.1:${servidor.address().port}`;
 });

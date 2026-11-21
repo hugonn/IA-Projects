@@ -71,14 +71,19 @@ export function criarCabecalho({ aoReiniciar }) {
   };
   let ultimoResumo = '';
 
+  // 429 = cliques rápidos demais (o servidor limita as atualizações manuais): não é falha de conexão.
+  const tratarFalha = (e) => {
+    if (e.status !== 429) estado.atualizar({ servidorOnline: false });
+  };
+
   el.refresh.addEventListener('click', async () => {
     el.refresh.disabled = true;
     el.refresh.setAttribute('aria-busy', 'true');
     el.iconeRefresh.classList.add('girando');
     try {
       await atualizarAgora();
-    } catch {
-      estado.atualizar({ servidorOnline: false });
+    } catch (e) {
+      tratarFalha(e);
     } finally {
       el.refresh.disabled = false;
       el.refresh.removeAttribute('aria-busy');
@@ -91,8 +96,8 @@ export function criarCabecalho({ aoReiniciar }) {
     try {
       aoReiniciar();
       await reiniciarSimulacao();
-    } catch {
-      estado.atualizar({ servidorOnline: false });
+    } catch (e) {
+      tratarFalha(e);
     } finally {
       el.reset.disabled = false;
     }

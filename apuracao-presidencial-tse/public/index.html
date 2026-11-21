@@ -7,25 +7,15 @@
   <meta name="description" content="Acompanhamento em tempo real da apuração da eleição presidencial com dados públicos do TSE." />
   <title>Apuração Presidencial</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 14'><rect width='20' height='14' fill='%23009B3A'/><path d='M10 1.7 18.3 7 10 12.3 1.7 7z' fill='%23FEDF00'/><circle cx='10' cy='7' r='3.5' fill='%23002776'/></svg>" />
-  <script>
-    // Aplica o tema salvo de forma síncrona, antes de o <body> ser renderizado (evita piscada).
-    try { if (localStorage.getItem('tema') === 'claro') document.documentElement.classList.remove('dark'); } catch (e) {}
-  </script>
-  <!-- Cores base fora do Tailwind: o fundo já sai certo antes de o CDN gerar as classes. -->
+  <!-- Tema aplicado de forma síncrona, antes de o <body> ser renderizado (evita piscada). -->
+  <script src="tema.js"></script>
+  <!-- Cores base fora do Tailwind: o fundo já sai certo antes de o Tailwind gerar as classes. -->
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
-        },
-      },
-    };
-  </script>
+  <!-- Script do Tailwind CDN (v3.4.16) servido localmente: nenhum código de terceiros é baixado em tempo de execução. -->
+  <script src="vendor/tailwindcss-3.4.16.js"></script>
+  <script src="tailwind-config.js"></script>
   <script type="module" src="js/main.js"></script>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 font-sans antialiased">

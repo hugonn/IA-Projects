@@ -25,9 +25,20 @@ const ano = String(opt('ano', 'ANO', '2026'));
 const turno = Number(opt('turno', 'TURNO', mock ? '1' : '2'));
 const eleicao = String(opt('eleicao', 'ELEICAO', ELEICOES_PRESIDENTE[ano]?.[turno] ?? '6258'));
 const port = Number(opt('porta', 'PORT', '3000'));
+// Por segurança o painel só aceita conexões do próprio computador. Para abrir na rede local,
+// use --host=0.0.0.0 (e, se acessar por um nome, inclua-o em HOSTS_PERMITIDOS).
+const host = opt('host', 'HOST', '127.0.0.1');
+// Endereço que o próprio servidor usa para consultar o simulador.
+const hostInterno = ['0.0.0.0', '::'].includes(host) ? '127.0.0.1' : host.includes(':') ? `[${host}]` : host;
 
 module.exports = {
   port,
+  host,
+  // Nomes extras aceitos no cabeçalho Host (proteção contra DNS rebinding), separados por vírgula.
+  hostsPermitidos: String(opt('hosts-permitidos', 'HOSTS_PERMITIDOS', ''))
+    .split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
+  // Intervalo mínimo entre atualizações manuais (botão Atualizar e reinício da simulação).
+  intervaloMinimoManualMs: Number(opt('intervalo-manual', 'INTERVALO_MINIMO_MANUAL_MS', '2000')),
   mock,
   ano,
   turno,
@@ -38,7 +49,7 @@ module.exports = {
   // Em modo mock o poller consulta o simulador servido pelo próprio Express,
   // percorrendo exatamente o mesmo caminho de código usado com o TSE real.
   tseBaseUrl: mock
-    ? `http://127.0.0.1:${port}/mock-tse`
+    ? `http://${hostInterno}:${port}/mock-tse`
     : opt('tse', 'TSE_BASE_URL', 'https://resultados.tse.jus.br'),
   intervaloMs: Number(opt('intervalo', 'INTERVALO_MS', '6000')),
   timeoutMs: Number(opt('timeout', 'TIMEOUT_MS', '5000')),

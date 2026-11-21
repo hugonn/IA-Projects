@@ -54,7 +54,7 @@ a interface a qualquer momento, mesmo fora do período eleitoral.
 | Backend | **Node.js** (≥ 18.17) | `fetch` nativo, `AbortSignal.timeout`, sem dependências além do Express |
 | Backend | **Express 4** | API REST, Server-Sent Events, arquivos estáticos e simulador do TSE |
 | Frontend | **HTML5 + JavaScript puro (ES Modules)** | Sem framework, componentes com atualização incremental do DOM |
-| Frontend | **Tailwind CSS 3** (CDN) | Layout, tema escuro/claro e responsividade |
+| Frontend | **Tailwind CSS 3** (script do modo CDN, servido localmente) | Layout, tema escuro/claro e responsividade |
 | Frontend | **SVG** | Mapa do Brasil interativo e gráficos (barras, réguas, barras divergentes) |
 | Dados | **API pública do TSE** | Resultados por Brasil, UF e exterior (`resultados.tse.jus.br`) |
 | Dados | **API de malhas do IBGE** | Contornos dos estados, convertidos em SVG por um script próprio |
@@ -122,7 +122,7 @@ flowchart LR
 | Frontend | Atualização incremental: listas reconciliadas por chave (`sincronizarLista`), nós reaproveitados entre atualizações | [public/js/dom.js](public/js/dom.js) |
 | Frontend | `<script type="module">` e separação entre rede, estado e componentes | [public/js](public/js) |
 | Frontend | Uma única conexão `EventSource` por sessão, com polling de reserva e reabertura no `onerror` | [public/js/rede.js](public/js/rede.js) |
-| Frontend | Tema aplicado no `<head>` de forma síncrona e cor de fundo definida em CSS próprio, sem piscada antes do Tailwind | [public/index.html](public/index.html), [public/styles.css](public/styles.css) |
+| Frontend | Tema aplicado no `<head>` de forma síncrona (arquivo `tema.js`, sem script inline) e cor de fundo definida em CSS próprio, sem piscada antes do Tailwind | [public/tema.js](public/tema.js), [public/styles.css](public/styles.css) |
 | Acessibilidade | Tags semânticas (`header`, `main`, `section`, `article`, `figure`, `footer`), `aria-live="polite"` com um resumo curto, `role="status"`/`alert`, barra de progresso com `aria-valuenow`, botões com `aria-pressed` e link para pular ao conteúdo | [public/index.html](public/index.html) |
 
 **Decisão sobre `worker_threads`:** o guia recomenda isolar cálculos pesados em threads. Medimos antes de
@@ -145,6 +145,10 @@ o cálculo continua na thread principal.
 
 Todas as respostas trazem o cabeçalho `X-Request-Id` (o enviado pelo cliente, se válido, ou um novo). Erros
 respondem em JSON no formato `{ "erro": "...", "requestId": "..." }`.
+
+As rotas `POST` só aceitam chamadas da própria página (ou de clientes sem navegador, como `curl`) e respondem
+`429` se repetidas em menos de 2 s. Requisições com `Host` desconhecido recebem `403`. Detalhes em
+[Segurança](#segurança).
 
 Resumo do snapshot (`/api/apuracao`):
 
@@ -229,6 +233,9 @@ Passe as opções depois de `--` (ex.: `npm run mock -- --duracao=3 --falhas=0.2
 | Argumento | Variável | Padrão | Descrição |
 |---|---|---|---|
 | `--porta=` | `PORT` | `3000` | Porta do painel |
+| `--host=` | `HOST` | `127.0.0.1` | Interface onde o servidor escuta. Use `0.0.0.0` para abrir na rede local (ver [Segurança](#segurança)) |
+| `--hosts-permitidos=` | `HOSTS_PERMITIDOS` | — | Nomes extras aceitos no cabeçalho `Host`, separados por vírgula |
+| `--intervalo-manual=` | `INTERVALO_MINIMO_MANUAL_MS` | `2000` | Intervalo mínimo entre atualizações manuais |
 | `--ano=` | `ANO` | `2026` | Ciclo eleitoral |
 | `--turno=` | `TURNO` | `2` (real) / `1` (mock) | Escolhe o código da eleição |
 | `--eleicao=` | `ELEICAO` | `6258` | Código da eleição no TSE (sobrepõe `--turno`) |
@@ -242,6 +249,48 @@ Passe as opções depois de `--` (ex.: `npm run mock -- --duracao=3 --falhas=0.2
 | `--shutdown-timeout=` | `SHUTDOWN_TIMEOUT_MS` | `5000` | Tempo máximo do encerramento gracioso |
 | `--limite-corpo=` | `LIMITE_CORPO` | `100kb` | Tamanho máximo do corpo JSON aceito |
 | — | `LOG_NIVEL` | `info` | Nível mínimo de log: `debug`, `info`, `warn`, `error` ou `silencioso` |
+
+---
+
+## Segurança
+
+O painel foi feito para rodar no seu computador. Ele não guarda senhas, tokens nem dados pessoais, não grava
+arquivos e só lê dados públicos do TSE. Mesmo assim, um servidor local pode ser alcançado por outros
+dispositivos da rede ou por sites abertos no seu navegador, e por isso tem as proteções abaixo.
+
+### Proteções
+
+| Risco | Proteção | Onde |
+|---|---|---|
+| Outros dispositivos da rede (Wi-Fi de casa, trabalho, café) acessarem o painel | O servidor escuta só em `127.0.0.1`. Abrir para a rede exige `--host=0.0.0.0` explicitamente | [server/config.js](server/config.js), [server/index.js](server/index.js) |
+| Um site malicioso aberto no navegador disparar ações no painel (CSRF) | Requisições `POST` só são aceitas da própria página: `Origin` precisa ser igual ao `Host` e `Sec-Fetch-Site` precisa ser `same-origin`. Respostas `403` | `bloquearOutrosSites` em [server/seguranca.js](server/seguranca.js) |
+| Um site externo apontar o próprio domínio para `127.0.0.1` e ler o painel (DNS rebinding) | O cabeçalho `Host` precisa ser `localhost`, `127.0.0.1`, `::1` ou um nome da lista `HOSTS_PERMITIDOS`. Respostas `403` | `validarHost` em [server/seguranca.js](server/seguranca.js) |
+| Um loop de atualizações manuais gerar dezenas de requisições por segundo ao TSE e o seu IP ser bloqueado pela CDN | Uma atualização manual a cada 2 s. As demais recebem `429` com `Retry-After`, e a interface ignora esse caso sem mostrar erro | `limitarManual` em [server/seguranca.js](server/seguranca.js) |
+| Script de terceiros comprometido rodando na página | O script do Tailwind (modo CDN, v3.4.16) é servido pelo próprio painel a partir de [public/vendor](public/vendor), sem nada baixado de outros domínios em tempo de execução. Não há scripts inline | [public/index.html](public/index.html) |
+| Injeção de conteúdo e uso da página dentro de outro site | `Content-Security-Policy` (scripts só do próprio servidor, conexões só com ele mesmo, imagens só dele e do TSE, `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` e `Permissions-Policy` | `cabecalhosSeguranca` em [server/seguranca.js](server/seguranca.js) |
+| Dados do TSE com HTML ou script | Tudo entra na página como texto (`textContent`), nunca como HTML. Fotos só por `http(s)` | [public/js/dom.js](public/js/dom.js), [public/js/contrato.js](public/js/contrato.js) |
+| Detalhes internos vazando em erros | Respostas de erro sem stack trace. Requisições bloqueadas e erros ficam no log com `requestId` | [server/app.js](server/app.js) |
+| Dependências vulneráveis | Só o Express como dependência. `npm audit` sem vulnerabilidades na data da revisão | [package.json](package.json) |
+
+### Abrir o painel para outros dispositivos da rede
+
+Só faça isso numa rede em que você confia: o painel não tem login.
+
+```bash
+npm start -- --host=0.0.0.0
+```
+
+Os outros dispositivos acessam pelo IP do computador (ex.: `http://192.168.0.57:3000`). Os endereços das placas
+de rede do computador já são aceitos automaticamente. Se for acessar por um nome (ex.: `painel.casa`), inclua-o em
+`--hosts-permitidos=painel.casa`. O firewall do Windows pode pedir permissão na primeira vez.
+
+### Limitações conhecidas
+
+- **Estilos inline:** a política de segurança permite estilos inline (`style-src 'unsafe-inline'`), porque o
+  Tailwind no modo CDN gera CSS em tempo de execução. Scripts inline continuam proibidos.
+- **Fontes:** vêm do Google Fonts (só CSS e arquivos de fonte, sem scripts).
+- **Atualização do Tailwind:** como o script fica copiado em `public/vendor`, uma nova versão precisa ser baixada
+  e trocada manualmente.
 
 ---
 
@@ -262,8 +311,9 @@ npm test
 | [tests/projecao.test.js](tests/projecao.test.js) | Projeção e calculadora de virada contra um cenário calculado à mão (% necessário, % recebido, margem final), "matematicamente definido" e agregação regional |
 | [tests/api.test.js](tests/api.test.js) | Contrato de `/api/apuracao`, ausência de `X-Powered-By`, repasse e geração de `X-Request-Id`, atualização manual, erro 500 sem stack trace, 404 e 400/413 em JSON, SSE (cabeçalhos, snapshot inicial, heartbeat e limpeza ao desconectar) |
 | [tests/frontend.test.js](tests/frontend.test.js) | Módulos do navegador sem DOM: formatação pt-BR, validação do snapshot, URLs de foto seguras e cores dos candidatos |
+| [tests/seguranca.test.js](tests/seguranca.test.js) | `Host` desconhecido bloqueado, `POST` de outro site bloqueado e da própria página aceito, limite de atualizações manuais (`429` e `Retry-After`), cabeçalhos de segurança, ausência de scripts inline ou externos no `index.html` e lista de hosts permitidos |
 
-Resultado atual: **25 testes, 25 passando**.
+Resultado atual: **31 testes, 31 passando**.
 
 ### Testes manuais e de integração
 
@@ -280,6 +330,18 @@ Feitos contra o TSE real, o simulador e o navegador (desktop e celular), durante
 | Custo do simulador por ciclo | De ~25 ms para ~1 ms após a memorização |
 | Mapa, tooltip, modos de cor, refresh manual, tabela de estados e tema claro | Funcionando após a migração para ES Modules |
 | Celular (375 px) e desktop | Sem rolagem horizontal (os cartões do mapa à direita passavam 3 px da borda e foram ajustados) |
+
+#### Revisão de segurança
+
+| Teste | Resultado |
+|---|---|
+| Interfaces em que o servidor escuta (padrão) | Só `127.0.0.1`. Acesso pelo IP da máquina na rede: sem conexão |
+| Com `--host=0.0.0.0` | Escuta em todas as interfaces e responde pelo IP da rede (`200`) |
+| `POST` com `Origin` de outro site | `403 Origem não permitida` |
+| `Host` falso (simulação de DNS rebinding) | `403 Host não permitido` |
+| Botão Atualizar na própria página | Funciona; duas chamadas seguidas: `200` e depois `429`, sem marcar o painel como offline |
+| Página com a nova Content-Security-Policy, no TSE real e na simulação | Sem violações no console; Tailwind, fontes e fotos do TSE carregando |
+| `npm audit` | 0 vulnerabilidades |
 
 #### Integração com o TSE
 
@@ -354,6 +416,7 @@ npm start -- --tse=https://resultados.tse.invalid
 ├── server/
 │   ├── index.js        Inicialização, porta em uso e encerramento gracioso
 │   ├── app.js          Express: rotas da API, X-Request-Id, erros e hardening
+│   ├── seguranca.js    Host permitido, bloqueio de outros sites, limite manual e cabeçalhos de segurança
 │   ├── sse.js          Canal SSE com heartbeat e limpeza de conexões
 │   ├── logger.js       Logs estruturados em JSON
 │   ├── config.js       Argumentos e variáveis de ambiente
@@ -363,8 +426,11 @@ npm start -- --tse=https://resultados.tse.invalid
 │   ├── regioes.js      UFs e regiões do IBGE
 │   └── mock.js         Simulador no formato do TSE
 ├── public/
-│   ├── index.html      Estrutura semântica da página
+│   ├── index.html      Estrutura semântica da página (sem scripts inline)
 │   ├── styles.css      Complementos ao Tailwind
+│   ├── tema.js         Aplica o tema salvo antes da renderização
+│   ├── tailwind-config.js  Configuração do Tailwind
+│   ├── vendor/         Script do Tailwind (modo CDN, v3.4.16) servido localmente
 │   └── js/
 │       ├── main.js         Ponto de entrada: liga rede, estado e componentes
 │       ├── rede.js         SSE único, polling de reserva e ações (atualizar, reiniciar)

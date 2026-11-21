@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const express = require('express');
 const { montarSnapshot } = require('./agregacao');
 const { CanalSSE } = require('./sse');
+const { validarHost, bloquearOutrosSites, limitarManual, cabecalhosSeguranca } = require('./seguranca');
 const log = require('./logger');
 
 // Aceita o X-Request-Id recebido só se tiver um formato seguro para logs e cabeçalhos.
@@ -39,6 +40,13 @@ function criarApp({ cfg, poller, referencia = null, simulador = null }) {
     next();
   });
 
+  // Segurança: cabeçalhos em todas as respostas, Host conhecido (contra DNS rebinding)
+  // e ações só a partir da própria página (contra CSRF).
+  app.use(cabecalhosSeguranca(cfg));
+  app.use(validarHost(cfg));
+  app.use(bloquearOutrosSites);
+  const limiteManual = limitarManual(cfg.intervaloMinimoManualMs);
+
   // Log de acesso das rotas da API (o simulador gera dezenas de requisições por ciclo e fica de fora).
   app.use('/api', (req, res, next) => {
     const inicio = process.hrtime.bigint();
@@ -60,7 +68,7 @@ function criarApp({ cfg, poller, referencia = null, simulador = null }) {
     app.use('/mock-tse', criarRotasMock(cfg, simulador).router);
 
     // Reinicia a simulação e descarta o cache do poller.
-    app.post('/api/mock/reset', assincrono(async (req, res) => {
+    app.post('/api/mock/reset', limiteManual, assincrono(async (req, res) => {
       simulador.reset();
       poller.limpar();
       await poller.executar('manual', req.id);
@@ -69,7 +77,7 @@ function criarApp({ cfg, poller, referencia = null, simulador = null }) {
   }
 
   // Atualização manual: busca o TSE imediatamente e reinicia a contagem da automática.
-  app.post('/api/atualizar', assincrono(async (req, res) => {
+  app.post('/api/atualizar', limiteManual, assincrono(async (req, res) => {
     await poller.executar('manual', req.id);
     res.set('Cache-Control', 'no-store').type('json').send(snapshotJson());
   }));

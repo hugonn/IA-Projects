@@ -22,7 +22,7 @@ async function pedir(url, { metodo = 'GET', timeoutMs = TIMEOUT_LEITURA_MS } = {
   });
   if (!resp.ok) {
     await resp.body?.cancel().catch(() => {});
-    throw new Error(`HTTP ${resp.status}`);
+    throw Object.assign(new Error(`HTTP ${resp.status}`), { status: resp.status });
   }
   return resp.json();
 }
