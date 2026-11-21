@@ -84,5 +84,10 @@ mcp-instagram-estrategia/
 │   ├── config.py             # Configuração opcional do LLM
 │   └── analytics.py          # Camada analítica e heurística
 ├── requirements.txt
+├── LICENSE
 └── README.md
 ```
+
+## Licença
+
+MIT. Veja o arquivo [LICENSE](LICENSE).

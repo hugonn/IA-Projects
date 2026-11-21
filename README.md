@@ -12,6 +12,13 @@ O objetivo aqui vai além de testar prompts: é aplicar **experiência real de a
 - **Arquitetura & Boas Práticas:** Soluções construídas sob os princípios de **Clean Architecture**, **TDD** e padrões modernos de engenharia de software.
 - **Observabilidade, Mensageria e Qualidade:** Implementação de telemetria distribuída, comunicação assíncrona orientada a eventos e suítes completas de testes automatizados.
 
+## 📂 Projetos
+
+| Projeto | Descrição | Stack |
+|---|---|---|
+| [apuracao-presidencial-tse](apuracao-presidencial-tse) | Aplicação web local que acompanha a apuração da eleição presidencial em tempo real, com dados do TSE | Node.js, Express, Tailwind |
+| [mcp-instagram-estrategia](mcp-instagram-estrategia) | Servidor MCP (MVP) com ferramentas genéricas de conteúdo para Instagram (trends, hooks, legenda SEO e funil de DM) | Python, FastMCP |
+
 ## 🛠️ Tecnologias & Ecossistema
 
 - **IA & Agentes:** Claude Code, ChatGPT, Gemini, Orquestração de Agentes, Engenharia de Contexto
